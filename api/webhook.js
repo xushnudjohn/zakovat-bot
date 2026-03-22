@@ -76,7 +76,7 @@ async function handleEmailCheck(chatId, email) {
   try {
     var response = await fetch(CSV_URL);
     if (!response.ok) {
-      await sendMessage(chatId, esc("Ma'lumotlar bazasiga ulanib bo'lmadi. Keyinroq urinib ko‘ring."));
+      await sendMessage(chatId, esc("Ma'lumotlar bazasiga ulanib bo'lmadi. Keyinroq urinib ko'ring."));
       return;
     }
     var csv = await response.text();
@@ -84,20 +84,33 @@ async function handleEmailCheck(chatId, email) {
 
     if (matches.length === 0) {
       var notFound =
-        "*" + esc("❌ Identifikatsiyadan o‘tmagan") + "*" + "\n\n" +
+        "*" + esc("❌ Identifikatsiyadan o'tmagan") + "*" + "\n\n" +
         "`" + esc(email) + "`" +
-        " " + esc("e-mail manzili ro‘yxatda topilmadi.") + "\n\n" +
-        esc("Bu e-maildan yuborilgan apellyatsiyalar ko‘rib chiqilmaydi.") + "\n" +
-        esc("Quyidagi sahifa orqali identifikatsiya arizasini yuboring: https://forms.gle/yL7QkmTNFS2y8uwq6.");
+        " " + esc("e-mail manzili ro'yxatda topilmadi.") + "\n\n" +
+        esc("Bu e-maildan yuborilgan apellyatsiyalar ko'rib chiqilmaydi.") + "\n" +
+        esc("Jamoangiz kapitani orqali identifikatsiya formasini to'ldiring.");
       await sendMessage(chatId, notFound);
       return;
     }
 
     matches.sort(function(a, b) { return b.date - a.date; });
+
+    // Har bir jamoa nomidan faqat eng oxirgi arizani qoldirish
+    var seen = {};
+    var unique = [];
+    for (var u = 0; u < matches.length; u++) {
+      var key = matches[u].team + "||" + matches[u].league;
+      if (!seen[key]) {
+        seen[key] = true;
+        unique.push(matches[u]);
+      }
+    }
+    matches = unique;
+
     var latest = matches[0];
 
     var msg =
-      "*" + esc("✅ Identifikatsiyadan o‘tgan") + "*" + "\n\n" +
+      "*" + esc("✅ Identifikatsiyadan o'tgan") + "*" + "\n\n" +
       "*" + esc("👤 Ism-sharif:") + "*" + " " + esc(latest.name) + "\n" +
       "*" + esc("🏆 Jamoa:") + "*" + " " + esc(latest.team) + " " + esc("(aktual)") + "\n" +
       "*" + esc("🏅 Liga:") + "*" + " " + esc(latest.league) + "\n" +
@@ -116,7 +129,7 @@ async function handleEmailCheck(chatId, email) {
     await sendMessage(chatId, msg);
   } catch (err) {
     console.error("handleEmailCheck xatolik:", err);
-    await sendMessage(chatId, esc("Xatolik yuz berdi. Keyinroq urinib ko‘ring."));
+    await sendMessage(chatId, esc("Xatolik yuz berdi. Keyinroq urinib ko'ring."));
   }
 }
 
@@ -135,7 +148,7 @@ module.exports = async function handler(req, res) {
       if (text === "/start") {
         await sendMessage(chatId,
           esc("👋 Zakovat Identifikatsiya Tekshiruvi") + "\n\n" +
-          esc("Apellyatsiya yuborishdan avval e-mail manzilingiz identifikatsiyadan o‘tganligini tekshiring.") + "\n\n" +
+          esc("Apellyatsiya yuborishdan avval e-mail manzilingiz identifikatsiyadan o'tganligini tekshiring.") + "\n\n" +
           esc("📩 E-mail manzilingizni yuboring — men tekshirib beraman.")
         );
       }
@@ -145,7 +158,7 @@ module.exports = async function handler(req, res) {
           esc("1. E-mail manzilingizni yozing") + "\n" +
           esc("2. Bot identifikatsiya holatini tekshiradi") + "\n" +
           esc("3. Natija ism-sharif, jamoa va liga bilan chiqadi") + "\n\n" +
-          esc("⚠️ Apellyatsiya faqat identifikatsiyadan o‘tgan e-mail orqali yuborilganda ko'rib chiqiladi.")
+          esc("⚠️ Apellyatsiya faqat identifikatsiyadan o'tgan e-mail orqali yuborilganda ko'rib chiqiladi.")
         );
       }
       else if (text.indexOf("@") !== -1 && text.indexOf(".") !== -1) {
